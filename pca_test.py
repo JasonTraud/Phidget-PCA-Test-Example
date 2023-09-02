@@ -1,13 +1,33 @@
 from tkinter import *
 from tkinter import ttk, font
 
+from Phidget22.Phidget import *
+from Phidget22.Devices.VoltageInput import *
+from Phidget22.Devices.DigitalOutput import *
+
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+
 serialNumberString = "12345"
 startUpDelay = 1
 duration = 10
 shutdownTime = 1
 numberOfTrials = 5
 
+samplingRate = 0.01
+
+sampleTimeArray = []
+voltageDataArray = []
+
 def runFunction ():
+
+    global serialNumberString
+    global startUpDelay
+    global duration
+    global shutdownTime
+    global numberOfTrials
+
     try:
         serialNumberString = SerialNumber_Box.get()
         startUpDelay = int(StartUp_Box.get())
@@ -30,10 +50,89 @@ def runFunction ():
     print("Trials       : " + str(numberOfTrials))
     print("                      ")
 
+    dataCollection()
+    plotData()
+
+    return
+
+def dataCollection():
+    # Attempt to connect to Phidets
+    try:
+        voltageInput0 = VoltageInput()	
+        voltageInput0.setHubPort(0)
+        voltageInput0.openWaitForAttachment(5000)
+        voltageInput0.setDataRate(voltageInput0.getMaxDataRate())
+
+        relayOutput1 = DigitalOutput()
+        relayOutput1.setIsHubPortDevice(True)
+        relayOutput1.setHubPort(1)
+        relayOutput1.openWaitForAttachment(5000)
+        relayOutput1.setDutyCycle(0)
+
+    except:
+        print("ERROR: Phidgets not attached.")
+        return
+    
+    global voltageDataArray
+    global sampleTimeArray
+    del voltageDataArray[:]
+    del sampleTimeArray[:]
+
+    testStartTime = time.time()    
+
+    # Startup data collection phase
+    relayOutput1.setDutyCycle(0)
+    currentTime = time.time()
+    while (currentTime - testStartTime) < startUpDelay:
+        voltageDataArray.append(voltageInput0.getVoltage())
+        sampleTimeArray.append(currentTime - testStartTime)
+        time.sleep(samplingRate)
+        currentTime = time.time()
+
+    # Primary Data collection phase
+    relayOutput1.setDutyCycle(1)
+    currentTime = time.time()
+    while (currentTime - testStartTime) < (duration + startUpDelay):
+        voltageDataArray.append(voltageInput0.getVoltage())
+        sampleTimeArray.append(currentTime - testStartTime)
+        time.sleep(samplingRate)
+        currentTime = time.time()
+
+    # Shutdown data collection phase
+    relayOutput1.setDutyCycle(0)
+    currentTime = time.time()
+    while (currentTime - testStartTime) < (duration + startUpDelay + shutdownTime):
+        voltageDataArray.append(voltageInput0.getVoltage())
+        sampleTimeArray.append(currentTime - testStartTime)
+        time.sleep(samplingRate)
+        currentTime = time.time()
+
+    # Close phidgets at end of test
+    voltageInput0.close()
+    relayOutput1.close()
+    return
+
+def plotData():
+
+    plt.close('all')                                        # Close existing plots for subsequent runs
+    plt.figure(figsize=(8,4),num="Output Data Plot")     # Set size and title
+    
+    # plot our data
+    plt.plot(sampleTimeArray,voltageDataArray)
+
+    # Format
+    plt.title('SN' + str(serialNumberString) + ' Output Data Plot')
+    plt.xlabel('Time')
+    plt.ylabel('Voltage')
+    
+    plt.tight_layout()
+    plt.show()
+    return
+    
+
 def callback (input) :
     if input.isdigit() and int(input)<=100 and int(input)>0:
-        return True
-    
+        return True    
     elif input == "":
         return True
     else:
