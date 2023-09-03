@@ -8,7 +8,9 @@ from Phidget22.Devices.DigitalOutput import *
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 
+fileNameString = "output file name"
 serialNumberString = "12345"
 startUpDelay = 1
 duration = 10
@@ -19,6 +21,8 @@ samplingRate = 0.01
 
 sampleTimeArrayFull = []
 voltageDataArrayFull = []
+
+testStartTime = 0
 
 def runFunction ():
 
@@ -50,8 +54,14 @@ def runFunction ():
     print("Trials       : " + str(numberOfTrials))
     print("                      ")
 
+    global testStartTime
+    global fileNameString
+    testStartTime = time.strftime('%Y-%m-%d %H-%M-%S')
+    fileNameString = testStartTime + " " + 'SN' + str(serialNumberString)
+
     dataCollection()
-    plotData()
+    exportData()
+    plotData()  
 
     return
 
@@ -128,16 +138,16 @@ def dataCollection():
 
 def plotData():
 
+    global sampleTimeArrayFull
+    global voltageDataArrayFull
+    global fileNameString
+    
     plt.close('all')                                     # Close existing plots for subsequent runs
     plt.figure(figsize=(8,4),num="Output Data Plot")     # Set size and title
     
-    global sampleTimeArrayFull
-    global voltageDataArrayFull
-
     # plot our data
     for index, item in enumerate(sampleTimeArrayFull):
         plt.plot(sampleTimeArrayFull[index],voltageDataArrayFull[index])
-        print(index)
 
     # Format
     plt.title('SN' + str(serialNumberString) + ' Output Data Plot')
@@ -145,9 +155,34 @@ def plotData():
     plt.ylabel('Voltage')
     
     plt.tight_layout()
+    plt.savefig(fileNameString+'.png')
     plt.show()
     return
     
+def exportData():
+
+    global sampleTimeArrayFull
+    global voltageDataArrayFull
+    global fileNameString
+
+    f = open(fileNameString + " Data.csv", "w", newline='', encoding='utf-8')
+    c = csv.writer(f)
+
+    header = ['Sample', 'Trial', 'Elapsed', 'Data']
+    c.writerow(header)
+    
+    Sample = 0
+
+    for index, item in enumerate(sampleTimeArrayFull):
+        for index2, item2 in enumerate(sampleTimeArrayFull[index]):
+            tempSampleTime = sampleTimeArrayFull[index]
+            tempVoltageData = voltageDataArrayFull[index]
+            data = [Sample,index,tempSampleTime[index2],tempVoltageData[index2]]
+            c.writerow(data)
+            Sample = Sample + 1
+        
+    f.close()
+    return
 
 def callback (input) :
     if input.isdigit() and int(input)<=100 and int(input)>0:
