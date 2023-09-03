@@ -17,8 +17,8 @@ numberOfTrials = 5
 
 samplingRate = 0.01
 
-sampleTimeArray = []
-voltageDataArray = []
+sampleTimeArrayFull = []
+voltageDataArrayFull = []
 
 def runFunction ():
 
@@ -73,39 +73,53 @@ def dataCollection():
         print("ERROR: Phidgets not attached.")
         return
     
-    global voltageDataArray
-    global sampleTimeArray
-    del voltageDataArray[:]
-    del sampleTimeArray[:]
+    tempVoltageDataArray = []
+    tempSampleTimeArray = []
+    global sampleTimeArrayFull
+    global voltageDataArrayFull
 
-    testStartTime = time.time()    
+    del sampleTimeArrayFull[:]
+    del voltageDataArrayFull[:]
 
-    # Startup data collection phase
-    relayOutput1.setDutyCycle(0)
-    currentTime = time.time()
-    while (currentTime - testStartTime) < startUpDelay:
-        voltageDataArray.append(voltageInput0.getVoltage())
-        sampleTimeArray.append(currentTime - testStartTime)
-        time.sleep(samplingRate)
+    currentTrial = 0
+
+    while currentTrial < numberOfTrials:
+        
+        testStartTime = time.time()    
+
+        # Startup data collection phase
+        relayOutput1.setDutyCycle(0)
         currentTime = time.time()
+        while (currentTime - testStartTime) < startUpDelay:
+            tempVoltageDataArray.append(voltageInput0.getVoltage())
+            tempSampleTimeArray.append(currentTime - testStartTime)
+            time.sleep(samplingRate)
+            currentTime = time.time()
 
-    # Primary Data collection phase
-    relayOutput1.setDutyCycle(1)
-    currentTime = time.time()
-    while (currentTime - testStartTime) < (duration + startUpDelay):
-        voltageDataArray.append(voltageInput0.getVoltage())
-        sampleTimeArray.append(currentTime - testStartTime)
-        time.sleep(samplingRate)
+        # Primary Data collection phase
+        relayOutput1.setDutyCycle(1)
         currentTime = time.time()
+        while (currentTime - testStartTime) < (duration + startUpDelay):
+            tempVoltageDataArray.append(voltageInput0.getVoltage())
+            tempSampleTimeArray.append(currentTime - testStartTime)
+            time.sleep(samplingRate)
+            currentTime = time.time()
 
-    # Shutdown data collection phase
-    relayOutput1.setDutyCycle(0)
-    currentTime = time.time()
-    while (currentTime - testStartTime) < (duration + startUpDelay + shutdownTime):
-        voltageDataArray.append(voltageInput0.getVoltage())
-        sampleTimeArray.append(currentTime - testStartTime)
-        time.sleep(samplingRate)
+        # Shutdown data collection phase
+        relayOutput1.setDutyCycle(0)
         currentTime = time.time()
+        while (currentTime - testStartTime) < (duration + startUpDelay + shutdownTime):
+            tempVoltageDataArray.append(voltageInput0.getVoltage())
+            tempSampleTimeArray.append(currentTime - testStartTime)
+            time.sleep(samplingRate)
+            currentTime = time.time()
+
+        
+        sampleTimeArrayFull.append(tempSampleTimeArray.copy())
+        voltageDataArrayFull.append(tempVoltageDataArray.copy())
+        del tempVoltageDataArray[:]
+        del tempSampleTimeArray[:]
+        currentTrial = currentTrial + 1
 
     # Close phidgets at end of test
     voltageInput0.close()
@@ -114,11 +128,16 @@ def dataCollection():
 
 def plotData():
 
-    plt.close('all')                                        # Close existing plots for subsequent runs
+    plt.close('all')                                     # Close existing plots for subsequent runs
     plt.figure(figsize=(8,4),num="Output Data Plot")     # Set size and title
     
+    global sampleTimeArrayFull
+    global voltageDataArrayFull
+
     # plot our data
-    plt.plot(sampleTimeArray,voltageDataArray)
+    for index, item in enumerate(sampleTimeArrayFull):
+        plt.plot(sampleTimeArrayFull[index],voltageDataArrayFull[index])
+        print(index)
 
     # Format
     plt.title('SN' + str(serialNumberString) + ' Output Data Plot')
