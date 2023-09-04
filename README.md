@@ -1,6 +1,17 @@
 # Phidget-PCA-Test-Example
 Basic PCA level automated test example using Phidgets to power cycle a circuit board, take voltage data, plot, and store data in a CSV.
 
+## Wiring Diagram
+![Wiring Diagram](https://github.com/JasonTraud/Phidget-PCA-Test-Example/blob/main/images/wiring_diagram.png?raw=true "Wiring Diagram")
+
+For the purposes of this example the PCA under test is just a power supply in order to accentuate the output waveform. For a practical application this would be tied to whatever output or test signal that you wish to measure. 
+
+### BOM
+- [VINT Phidget HUB0001_0](https://www.phidgets.com/?tier=3&catid=64&pcid=57&prodid=1202)
+- [Votage Input Phidget VCP1000_0](https://www.phidgets.com/?tier=3&catid=106&pcid=86&prodid=953)
+- [Relay Phidget REL2001_0](https://www.phidgets.com/?tier=3&catid=46&pcid=39&prodid=722)
+- Generic Power Supply
+
 ## GUI
 ![Form GUI](https://github.com/JasonTraud/Phidget-PCA-Test-Example/blob/main/images/form_gui.png?raw=true "Form GUI")
 
